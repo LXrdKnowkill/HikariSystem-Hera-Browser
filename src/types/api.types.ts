@@ -1,4 +1,4 @@
-import { NavigationState, TabInfo, TabUpdateInfo } from './ui.types';
+import type { NavigationState } from './ui.types';
 import { Bookmark, BookmarkFolder, HistoryEntry } from './database.types';
 import {
   TabCreatedCallback,

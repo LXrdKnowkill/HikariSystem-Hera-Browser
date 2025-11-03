@@ -37,7 +37,13 @@ const config: ForgeConfig = {
             js: './src/renderer.ts',
             name: 'main_window',
             preload: {
-              js: './src/preload.ts',
+              js: './src/preload-ui.ts',
+            },
+          },
+          {
+            name: 'preload_web',
+            preload: {
+              js: './src/preload-web.ts',
             },
           },
         ],

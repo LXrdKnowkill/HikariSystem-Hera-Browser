@@ -1,5 +1,86 @@
 # Changelog - Hera Browser
 
+<<<<<<< HEAD
+## [2.0.1] - 2025-11-03
+
+### 🔒 CRITICAL SECURITY FIX
+
+#### Preload Compartmentalization
+- ✅ **FIXED: Critical vulnerability** - Sites externos não podem mais acessar APIs privilegiadas
+- ✅ Criado `preload-ui.ts` (privilegiado) para páginas internas
+- ✅ Criado `preload-web.ts` (limitado) para sites externos
+- ✅ Sites externos **NÃO** podem mais:
+  - Acessar histórico de navegação
+  - Limpar dados do navegador
+  - Acessar favoritos
+  - Modificar configurações
+  - Acessar banco de dados
+- ✅ Implementado princípio do menor privilégio
+- ✅ Compartimentalização de segurança entre código confiável e não-confiável
+
+### ✨ New Features
+
+#### Páginas Dedicadas
+- ✅ **Página de Histórico** (`hera://history`)
+  - Interface moderna e intuitiva para visualizar histórico
+  - Busca em tempo real por título ou URL
+  - Agrupamento automático por data (Hoje, Ontem, datas específicas)
+  - Remoção de itens individuais
+  - Limpeza completa do histórico
+  - Navegação ao clicar em qualquer item
+
+- ✅ **Página de Downloads** (`hera://downloads`)
+  - Interface dedicada para gerenciar downloads
+  - Visualização de progresso em tempo real
+  - Ícones dinâmicos por tipo de arquivo (PDF, imagens, arquivos, etc.)
+  - **Abrir arquivo baixado** com um clique
+  - **Mostrar arquivo na pasta** do sistema
+  - Abrir pasta de downloads padrão
+  - Persistência de downloads entre sessões
+  - Limpeza de downloads concluídos
+
+#### APIs de Download
+- ✅ `openDownloadedFile()` - Abre arquivo baixado
+- ✅ `showDownloadInFolder()` - Mostra arquivo na pasta do sistema
+- ✅ `openDownloadsFolder()` - Abre pasta de downloads padrão
+
+### 🎨 UI/UX Improvements
+- Design moderno e consistente com tema escuro
+- Animações suaves e transições
+- Estados vazios informativos
+- Responsivo para diferentes tamanhos de tela
+- Favicons nos itens de histórico
+- Barra de progresso animada para downloads
+
+### 🔧 Technical Improvements
+- **100% TypeScript Type Coverage** - Zero erros de tipo no código fonte
+- Código limpo e organizado
+- Imports organizados por categoria
+- Remoção de código não utilizado
+- Documentação completa das APIs
+
+### 🐛 Bug Fixes
+- ✅ Menu agora abre corretamente as páginas de histórico e downloads
+- ✅ Botões "Histórico" e "Downloads" no menu dos 3 pontinhos funcionando
+
+### 🎨 Download Experience Improvements
+- ✅ **Badge de contador** no botão de downloads mostra downloads ativos
+- ✅ **Notificações toast** quando download inicia e completa
+- ✅ **Animação de pulso** no botão durante downloads
+- ✅ **Auto-fechamento** do painel após downloads concluírem
+- ✅ **Feedback visual** claro e profissional
+- ✅ Botão de downloads abre página dedicada `hera://downloads`
+
+### 📝 Documentation
+- Documentação completa das novas páginas
+- Guia de testes manuais
+- Resumo de validação de tipos
+- Documentação de limpeza de código
+
+---
+
+=======
+>>>>>>> 0989e2d204747bd29851e73a85619885fabf3d7c
 ## [2.0.0] - 2025
 
 ### 🚀 Major Features

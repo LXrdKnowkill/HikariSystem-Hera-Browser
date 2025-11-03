@@ -705,8 +705,12 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Painel de Downloads
-  downloadsBtn.addEventListener('click', () => downloadsPanel.classList.toggle('hidden'));
+  // Botão de Downloads - Abre página dedicada
+  downloadsBtn.addEventListener('click', () => {
+    window.heraAPI.createNewTab('hera://downloads');
+  });
+  
+  // Painel de Downloads (mantido para notificações rápidas)
   closeDownloadsPanelBtn.addEventListener('click', () => downloadsPanel.classList.add('hidden'));
 
 
@@ -844,10 +848,73 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const downloadsEmpty = document.getElementById('downloads-empty')!;
   
+  // Contador de downloads ativos
+  let activeDownloads = 0;
+  const downloadsBadge = document.getElementById('downloads-badge')!;
+  const downloadsButton = document.getElementById('downloads-btn')!;
+
+  function updateDownloadsBadge() {
+    if (activeDownloads > 0) {
+      downloadsBadge.textContent = activeDownloads.toString();
+      downloadsBadge.classList.remove('hidden');
+      downloadsButton.classList.add('downloading');
+    } else {
+      downloadsBadge.classList.add('hidden');
+      downloadsButton.classList.remove('downloading');
+    }
+  }
+
+  function showDownloadToast(title: string, message: string, success = false) {
+    const toast = document.createElement('div');
+    toast.className = 'download-toast';
+    
+    const iconClass = success ? 'success' : '';
+    const iconSvg = success 
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+    
+    toast.innerHTML = `
+      <div class="download-toast-icon ${iconClass}">
+        ${iconSvg}
+      </div>
+      <div class="download-toast-content">
+        <div class="download-toast-title">${title}</div>
+        <div class="download-toast-message">${message}</div>
+      </div>
+      <button class="download-toast-close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    const closeBtn = toast.querySelector('.download-toast-close');
+    closeBtn?.addEventListener('click', () => {
+      toast.classList.add('hiding');
+      setTimeout(() => toast.remove(), 300);
+    });
+    
+    // Auto-remove após 5 segundos
+    setTimeout(() => {
+      if (toast.parentElement) {
+        toast.classList.add('hiding');
+        setTimeout(() => toast.remove(), 300);
+      }
+    }, 5000);
+  }
+
   window.heraAPI.onDownloadStarted((data) => {
+    activeDownloads++;
+    updateDownloadsBadge();
+    
     downloadsPanel.classList.remove('hidden');
     downloadsEmpty.classList.add('hidden');
     const { id, filename, totalBytes } = data;
+    
+    // Mostrar notificação
+    showDownloadToast('Download iniciado', filename);
     const item = document.createElement('div');
     item.className = 'download-item';
     item.id = `download-${id}`;
@@ -902,6 +969,9 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   window.heraAPI.onDownloadComplete((data) => {
+    activeDownloads = Math.max(0, activeDownloads - 1);
+    updateDownloadsBadge();
+    
     const item = document.getElementById(`download-${data.id}`);
     if (!item) return;
     
@@ -921,6 +991,19 @@ window.addEventListener('DOMContentLoaded', () => {
           case 'completed':
             statusSpan.classList.add('completed');
             statusSpan.textContent = 'Concluído';
+            
+            // Mostrar notificação de sucesso
+            const filename = item.querySelector('.download-item-name')?.textContent || 'Arquivo';
+            showDownloadToast('Download concluído', filename, true);
+            
+            // Auto-fechar painel após 3 segundos se não houver downloads ativos
+            if (activeDownloads === 0) {
+              setTimeout(() => {
+                if (activeDownloads === 0) {
+                  downloadsPanel.classList.add('hidden');
+                }
+              }, 3000);
+            }
             // Adiciona botões de ação
             actionsDiv.innerHTML = `
               <button class="download-item-btn" title="Abrir arquivo">

@@ -30,11 +30,32 @@ import { validateBookmarks, validateHistoryEntries } from './types/guards';
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
+declare const PRELOAD_WEB_WEBPACK_ENTRY: string;
 
 // Constantes
 const TAB_BAR_HEIGHT = 40;
 const NAV_BAR_HEIGHT = 50;
 const UI_HEIGHT = TAB_BAR_HEIGHT + NAV_BAR_HEIGHT;
+
+/**
+ * Determina qual preload usar baseado na URL
+ * 
+ * @param url - URL que será carregada
+ * @returns Caminho do preload apropriado
+ * 
+ * SEGURANÇA:
+ * - URLs internas (hera://) usam preload-ui.ts (privilegiado, acesso completo)
+ * - URLs externas usam preload-web.ts (limitado, sem acesso ao banco de dados)
+ */
+const getPreloadForUrl = (url: string): string => {
+  // URLs internas são confiáveis - usam preload privilegiado
+  if (url.startsWith('hera://')) {
+    return MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY;
+  }
+
+  // URLs externas NÃO são confiáveis - usam preload limitado
+  return PRELOAD_WEB_WEBPACK_ENTRY;
+};
 
 let mainWindow: BrowserWindow;
 const tabs = new Map<string, BrowserView>();
@@ -84,34 +105,34 @@ const switchToTab = (id: string) => {
 
 // --- MUDANÇA v2.2 ---
 // Agora 'url' pode ser undefined, e aí usamos o padrão
-const createNewTab = (url: string | undefined = undefined) => { 
+const createNewTab = (url: string | undefined = undefined) => {
   const finalUrl = url || 'hera://new-tab'; // Se a URL for nula, abre a new-tab
 
   const view = new BrowserView({
     webPreferences: {
-      preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY, 
+      preload: getPreloadForUrl(finalUrl),
     }
   });
 
   const id = uuidv4();
   tabs.set(id, view);
-  
+
   // Determinar título e favicon inicial
   let initialTitle = 'Nova Aba';
   let initialFavicon: string | undefined;
-  
+
   if (finalUrl.startsWith('hera://')) {
-    initialTitle = finalUrl.includes('settings') ? 'Configurações' : 
-                   finalUrl.includes('new-tab') ? 'Nova Aba' :
-                   finalUrl.includes('history') ? 'Histórico' :
-                   finalUrl.includes('downloads') ? 'Downloads' : 'Hera Browser';
+    initialTitle = finalUrl.includes('settings') ? 'Configurações' :
+      finalUrl.includes('new-tab') ? 'Nova Aba' :
+        finalUrl.includes('history') ? 'Histórico' :
+          finalUrl.includes('downloads') ? 'Downloads' : 'Hera Browser';
     // Usa o protocolo hera:// para servir o ícone
     initialFavicon = 'hera://HeraBrowser256x256.png';
   }
-  
+
   // Armazena informações da aba para persistência
   tabInfo.set(id, { url: finalUrl, title: initialTitle, favicon: initialFavicon });
-  
+
   switchToTab(id);
   view.webContents.loadURL(finalUrl);
 
@@ -139,7 +160,7 @@ const createNewTab = (url: string | undefined = undefined) => {
     if (currentUrl) {
       // Sempre atualiza URL para garantir sincronização
       mainWindow.webContents.send('tab-updated', id, { url: currentUrl });
-      
+
       // Para páginas internas, garantir que o ícone do navegador seja mantido
       if (currentUrl.startsWith('hera://')) {
         const heraIconUrl = 'hera://HeraBrowser256x256.png';
@@ -191,24 +212,24 @@ const createNewTab = (url: string | undefined = undefined) => {
   view.webContents.on('did-finish-load', () => {
     const title = view.webContents.getTitle();
     const url = view.webContents.getURL();
-    
+
     // SEMPRE envia a URL primeiro para garantir que seja atualizada na barra de endereço
     mainWindow.webContents.send('tab-updated', id, { url });
-    
-      // Para páginas internas (hera://), usar ícone do navegador via protocolo hera://
-      if (url.startsWith('hera://')) {
-        // Usa o protocolo hera:// para servir o ícone (já está configurado no protocol handler)
-        const heraIconUrl = 'hera://HeraBrowser256x256.png';
-        mainWindow.webContents.send('tab-updated', id, { favicon: heraIconUrl, title });
-        // Atualiza info da aba
-        if (tabInfo.has(id)) {
-          const info = tabInfo.get(id)!;
-          info.url = url;
-          info.title = title || info.title;
-          info.favicon = heraIconUrl;
-        }
-      } else {
-      
+
+    // Para páginas internas (hera://), usar ícone do navegador via protocolo hera://
+    if (url.startsWith('hera://')) {
+      // Usa o protocolo hera:// para servir o ícone (já está configurado no protocol handler)
+      const heraIconUrl = 'hera://HeraBrowser256x256.png';
+      mainWindow.webContents.send('tab-updated', id, { favicon: heraIconUrl, title });
+      // Atualiza info da aba
+      if (tabInfo.has(id)) {
+        const info = tabInfo.get(id)!;
+        info.url = url;
+        info.title = title || info.title;
+        info.favicon = heraIconUrl;
+      }
+    } else {
+
       // Tenta obter o favicon quando a página carregar
       // Usa um pequeno delay para garantir que o DOM esteja completamente carregado
       setTimeout(() => {
@@ -250,7 +271,7 @@ const createNewTab = (url: string | undefined = undefined) => {
         const info = tabInfo.get(id)!;
         info.url = url;
       }
-      
+
       // Adiciona ao histórico DEPOIS de garantir que temos URL e título
       if (url && !url.startsWith('hera://')) {
         const finalTitle = title || url;
@@ -263,13 +284,13 @@ const createNewTab = (url: string | undefined = undefined) => {
 
   view.webContents.on('did-navigate', (event, navigateUrl) => {
     mainWindow.webContents.send('tab-updated', id, { url: navigateUrl });
-    
+
     // Atualiza info da aba
     if (tabInfo.has(id)) {
       const info = tabInfo.get(id)!;
       info.url = navigateUrl;
     }
-    
+
     // Tenta buscar favicon imediatamente após navegação (apenas para sites externos)
     if (!navigateUrl.startsWith('hera://')) {
       setTimeout(() => {
@@ -294,15 +315,15 @@ const createNewTab = (url: string | undefined = undefined) => {
           } else {
             // Fallback para favicon.ico padrão
             try {
-            const urlObj = new URL(navigateUrl);
-            const defaultFavicon = `${urlObj.protocol}//${urlObj.host}/favicon.ico`;
-            mainWindow.webContents.send('tab-updated', id, { favicon: defaultFavicon });
-            // Atualiza info da aba
-            if (tabInfo.has(id)) {
-              const info = tabInfo.get(id)!;
-              info.favicon = defaultFavicon;
-              info.url = navigateUrl;
-            }
+              const urlObj = new URL(navigateUrl);
+              const defaultFavicon = `${urlObj.protocol}//${urlObj.host}/favicon.ico`;
+              mainWindow.webContents.send('tab-updated', id, { favicon: defaultFavicon });
+              // Atualiza info da aba
+              if (tabInfo.has(id)) {
+                const info = tabInfo.get(id)!;
+                info.favicon = defaultFavicon;
+                info.url = navigateUrl;
+              }
             } catch (e) {
               // Ignora erros
             }
@@ -348,12 +369,12 @@ const createNewTab = (url: string | undefined = undefined) => {
 
   view.webContents.on('page-favicon-updated', (event, favicons) => {
     const currentUrl = view.webContents.getURL();
-    
+
     // Para páginas internas, não atualizar favicon (já foi definido)
     if (currentUrl.startsWith('hera://')) {
       return;
     }
-    
+
     if (favicons && favicons.length > 0) {
       const resolvedUrl = resolveFaviconUrl(favicons[0], currentUrl);
       mainWindow.webContents.send('tab-updated', id, { favicon: resolvedUrl });
@@ -386,27 +407,27 @@ const closeTab = (id: string) => {
 
   if (activeTabId === id) {
     if (tabs.size > 0) {
-      const lastTabId = tabs.keys().next().value; 
+      const lastTabId = tabs.keys().next().value;
       switchToTab(lastTabId);
     } else {
       createNewTab();
     }
   }
-  
+
   // Salva estado das abas após fechar uma aba
   saveTabsState().catch((err: unknown) => console.error('Erro ao salvar estado das abas:', err));
 };
 
 // --- Janela Principal ---
 const createWindow = (): void => {
-  const iconPath = path.join(app.getAppPath(), 'src', 'HeraBrowser512x512.png'); 
+  const iconPath = path.join(app.getAppPath(), 'src', 'HeraBrowser512x512.png');
 
   mainWindow = new BrowserWindow({
     height: 800,
     width: 1200,
     frame: false,
     autoHideMenuBar: true,
-    icon: iconPath, 
+    icon: iconPath,
     backgroundColor: '#2b2b2b',
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
@@ -416,7 +437,7 @@ const createWindow = (): void => {
   });
 
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
-  
+
   // DevTools - F12 para abrir/fechar (painel integrado)
   mainWindow.webContents.on('before-input-event', (event, input) => {
     if (input.key === 'F12' || (input.key === 'I' && input.control && input.shift)) {
@@ -427,7 +448,7 @@ const createWindow = (): void => {
       }
     }
   });
-  
+
   // Listeners de Janela
   mainWindow.on('enter-full-screen', () => {
     mainWindow.setFullScreen(true);
@@ -483,14 +504,14 @@ app.whenReady().then(async () => {
 
   // --- Handler do Protocolo (MUDANÇA v2.2) ---
   const getMimeType = (filePath: string) => {
-      const ext = path.extname(filePath).toLowerCase();
-      if (ext === '.css') return 'text/css';
-      if (ext === '.js') return 'text/javascript';
-      if (ext === '.png') return 'image/png';
-      if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
-      if (ext === '.svg') return 'image/svg+xml';
-      if (ext === '.woff2') return 'font/woff2';
-      return 'text/html';
+    const ext = path.extname(filePath).toLowerCase();
+    if (ext === '.css') return 'text/css';
+    if (ext === '.js') return 'text/javascript';
+    if (ext === '.png') return 'image/png';
+    if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
+    if (ext === '.svg') return 'image/svg+xml';
+    if (ext === '.woff2') return 'font/woff2';
+    return 'text/html';
   };
 
   protocol.handle('hera', (request) => {
@@ -498,7 +519,7 @@ app.whenReady().then(async () => {
       const url = new URL(request.url);
       const host = url.hostname;
       const pathname = url.pathname;
-      const appPath = path.join(app.getAppPath(), 'src'); 
+      const appPath = path.join(app.getAppPath(), 'src');
 
       if (host === 'navigate-from-newtab') {
         const targetUrl = url.searchParams.get('url');
@@ -509,7 +530,7 @@ app.whenReady().then(async () => {
             (async () => {
               let finalUrl = targetUrl;
               const isUrl = /^(https?:\/\/)|(localhost)|([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}/.test(targetUrl);
-              
+
               if (isUrl) {
                 if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
                   finalUrl = `https://${targetUrl}`;
@@ -530,7 +551,7 @@ app.whenReady().then(async () => {
             });
           }
         }
-        return new Response(null, { status: 204 }); 
+        return new Response(null, { status: 204 });
       }
 
       // Rota para servir arquivos
@@ -541,38 +562,38 @@ app.whenReady().then(async () => {
         } else {
           filePath = path.join(appPath, pathname);
         }
-      } 
-            // --- MUDANÇA v2.2: Adiciona a rota de settings --- 
-            else if (host === 'settings') {
-              if (pathname === '/' || pathname === '') {
-                filePath = path.join(appPath, 'settings.html');
-              } else {
-                // Para o settings.css, hera_logo.png, etc.
-                filePath = path.join(appPath, pathname);
-              }
-            } else if (host === 'menu') {
-              if (pathname === '/' || pathname === '') {
-                filePath = path.join(appPath, 'menu.html');
-              } else {
-                filePath = path.join(appPath, pathname);
-              }
-            } else if (host === 'history') {
-              if (pathname === '/' || pathname === '') {
-                filePath = path.join(appPath, 'history.html');
-              } else {
-                filePath = path.join(appPath, pathname);
-              }
-            } else if (host === 'downloads') {
-              if (pathname === '/' || pathname === '') {
-                filePath = path.join(appPath, 'downloads.html');
-              } else {
-                filePath = path.join(appPath, pathname);
-              }
-            }
-            // --- FIM DA MUDANÇA ---
-            else {
-              filePath = path.join(appPath, host, pathname);
-            }      
+      }
+      // --- MUDANÇA v2.2: Adiciona a rota de settings --- 
+      else if (host === 'settings') {
+        if (pathname === '/' || pathname === '') {
+          filePath = path.join(appPath, 'settings.html');
+        } else {
+          // Para o settings.css, hera_logo.png, etc.
+          filePath = path.join(appPath, pathname);
+        }
+      } else if (host === 'menu') {
+        if (pathname === '/' || pathname === '') {
+          filePath = path.join(appPath, 'menu.html');
+        } else {
+          filePath = path.join(appPath, pathname);
+        }
+      } else if (host === 'history') {
+        if (pathname === '/' || pathname === '') {
+          filePath = path.join(appPath, 'history.html');
+        } else {
+          filePath = path.join(appPath, pathname);
+        }
+      } else if (host === 'downloads') {
+        if (pathname === '/' || pathname === '') {
+          filePath = path.join(appPath, 'downloads.html');
+        } else {
+          filePath = path.join(appPath, pathname);
+        }
+      }
+      // --- FIM DA MUDANÇA ---
+      else {
+        filePath = path.join(appPath, host, pathname);
+      }
       filePath = path.normalize(filePath);
       if (!filePath.startsWith(appPath)) {
         return new Response('Access Denied', { status: 403 });
@@ -607,7 +628,7 @@ app.whenReady().then(async () => {
     }
     return createNewTab(url);
   });
-  
+
   ipcMain.handle('tab:switch', (_e, id: string) => {
     // Validate input parameter
     if (typeof id !== 'string' || !id.trim()) {
@@ -616,7 +637,7 @@ app.whenReady().then(async () => {
     }
     return switchToTab(id);
   });
-  
+
   ipcMain.handle('tab:close', (_e, id: string) => {
     // Validate input parameter
     if (typeof id !== 'string' || !id.trim()) {
@@ -625,7 +646,7 @@ app.whenReady().then(async () => {
     }
     return closeTab(id);
   });
-  
+
   ipcMain.handle('nav:back', () => {
     const activeView = tabs.get(activeTabId);
     if (activeView && activeView.webContents.navigationHistory.canGoBack()) {
@@ -666,11 +687,11 @@ app.whenReady().then(async () => {
       mainWindow.addBrowserView(menuView);
       const menuWidth = 280;
       const [windowWidth] = mainWindow.getContentSize();
-      menuView.setBounds({ 
-        x: windowWidth - menuWidth - 10, 
-        y: NAV_BAR_HEIGHT, 
-        width: menuWidth, 
-        height: dynamicMenuHeight 
+      menuView.setBounds({
+        x: windowWidth - menuWidth - 10,
+        y: NAV_BAR_HEIGHT,
+        width: menuWidth,
+        height: dynamicMenuHeight
       });
       mainWindow.setTopBrowserView(menuView);
       menuView.webContents.focus();
@@ -690,10 +711,10 @@ app.whenReady().then(async () => {
         createNewTab();
         break;
       case 'history':
-        mainWindow.webContents.send('show-history');
+        createNewTab('hera://history');
         break;
       case 'downloads':
-        mainWindow.webContents.send('show-downloads');
+        createNewTab('hera://downloads');
         break;
       case 'settings':
         createNewTab('hera://settings');
@@ -703,7 +724,7 @@ app.whenReady().then(async () => {
         break;
     }
   });
-  
+
   // ... (handlers de window, download, history sem mudanças) ...
   ipcMain.handle('window:minimize', () => mainWindow.minimize());
   ipcMain.handle('window:maximize', () => {
@@ -740,7 +761,7 @@ app.whenReady().then(async () => {
       if (typeof key !== 'string' || !key.trim()) {
         throw new Error('Chave de configuração inválida');
       }
-      
+
       return await getSetting(key);
     } catch (error: unknown) {
       console.error('Erro ao obter configuração:', error);
@@ -757,7 +778,7 @@ app.whenReady().then(async () => {
       if (typeof value !== 'string') {
         throw new Error('Valor de configuração inválido');
       }
-      
+
       await setSetting(key, value);
       return true;
     } catch (error: unknown) {
@@ -791,7 +812,7 @@ app.whenReady().then(async () => {
       if (folderId !== undefined && typeof folderId !== 'string') {
         throw new Error('ID da pasta inválido');
       }
-      
+
       return await addBookmark(url, title, favicon, folderId);
     } catch (error: unknown) {
       console.error('Erro ao adicionar favorito:', error);
@@ -805,7 +826,7 @@ app.whenReady().then(async () => {
       if (typeof id !== 'string' || !id.trim()) {
         throw new Error('ID inválido');
       }
-      
+
       await removeBookmark(id);
       return true;
     } catch (error: unknown) {
@@ -820,7 +841,7 @@ app.whenReady().then(async () => {
       if (folderId !== undefined && typeof folderId !== 'string') {
         throw new Error('ID da pasta inválido');
       }
-      
+
       const bookmarks = await getBookmarks(folderId);
       return validateBookmarks(bookmarks);
     } catch (error: unknown) {
@@ -835,7 +856,7 @@ app.whenReady().then(async () => {
       if (typeof query !== 'string') {
         throw new Error('Query de busca inválida');
       }
-      
+
       const bookmarks = await searchBookmarks(query);
       return validateBookmarks(bookmarks);
     } catch (error: unknown) {
@@ -853,7 +874,7 @@ app.whenReady().then(async () => {
       if (parentId !== undefined && typeof parentId !== 'string') {
         throw new Error('ID da pasta pai inválido');
       }
-      
+
       return await createBookmarkFolder(name, parentId);
     } catch (error: unknown) {
       console.error('Erro ao criar pasta de favoritos:', error);
@@ -867,7 +888,7 @@ app.whenReady().then(async () => {
       if (parentId !== undefined && typeof parentId !== 'string') {
         throw new Error('ID da pasta pai inválido');
       }
-      
+
       return await getBookmarkFolders(parentId);
     } catch (error: unknown) {
       console.error('Erro ao buscar pastas de favoritos:', error);
@@ -884,7 +905,7 @@ app.whenReady().then(async () => {
     }
     shell.showItemInFolder(filePath);
   });
-  
+
   ipcMain.handle('download:open-file', (_e, filePath: string): void => {
     // Validate input parameter
     if (typeof filePath !== 'string' || !filePath.trim()) {
@@ -898,9 +919,9 @@ app.whenReady().then(async () => {
     const downloadsPath = app.getPath('downloads');
     shell.openPath(downloadsPath);
   });
-  
+
   createWindow();
-  
+
   // Tenta restaurar abas salvas
   try {
     const savedTabs = await loadOpenTabs();
@@ -930,7 +951,7 @@ app.whenReady().then(async () => {
     // Em caso de erro, cria uma nova aba padrão
     createNewTab();
   }
-  
+
   // Registrar listener de resize DEPOIS de criar a janela
   if (mainWindow) {
     mainWindow.on('resize', resizeActiveTab);
@@ -975,7 +996,7 @@ const saveTabsState = async () => {
   try {
     const tabsArray: TabState[] = [];
     let position = 0;
-    
+
     // Percorre todas as abas em ordem
     for (const [id, view] of tabs.entries()) {
       const info = tabInfo.get(id);
@@ -990,7 +1011,7 @@ const saveTabsState = async () => {
         });
       }
     }
-    
+
     await saveOpenTabs(tabsArray);
   } catch (error: unknown) {
     console.error('Erro ao salvar estado das abas:', error);

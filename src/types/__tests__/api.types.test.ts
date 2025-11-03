@@ -7,6 +7,11 @@
  * @remarks
  * Estes testes não são executados em runtime - eles apenas validam
  * que os tipos estão corretos durante a compilação.
+ * 
+ * ⚠️ NOTA SOBRE WARNINGS "declared but never used":
+ * Os warnings TS6196 (declared but never used) são ESPERADOS e NORMAIS.
+ * Estes tipos de teste não precisam ser "usados" - eles são validados
+ * automaticamente pelo TypeScript durante a compilação.
  */
 
 import { HeraAPI } from '../api.types';
