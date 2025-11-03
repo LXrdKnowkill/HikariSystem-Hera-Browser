@@ -1,6 +1,26 @@
 # Changelog - Hera Browser
 
-<<<<<<< HEAD
+## [2.0.2] - 2025-11-03
+
+### ✨ New Features
+
+#### Barra de Favoritos Funcional
+- ✅ **Visualização de favoritos** na barra superior
+- ✅ Renderização automática dos bookmarks salvos
+- ✅ Favicons exibidos nos favoritos
+- ✅ Clique para navegar diretamente
+- ✅ Atualização em tempo real ao adicionar/remover favoritos
+- ✅ Scroll horizontal para muitos favoritos
+- ✅ Design moderno com hover effects
+
+### 🎨 UI Improvements
+- ✅ Estilos melhorados para itens de favoritos
+- ✅ Animações suaves ao passar o mouse
+- ✅ Scrollbar customizada
+- ✅ Mensagem quando não há favoritos
+
+---
+
 ## [2.0.1] - 2025-11-03
 
 ### 🔒 CRITICAL SECURITY FIX
@@ -76,11 +96,10 @@
 - Guia de testes manuais
 - Resumo de validação de tipos
 - Documentação de limpeza de código
+- Documentação de segurança (SECURITY_PRELOAD.md)
 
 ---
 
-=======
->>>>>>> 0989e2d204747bd29851e73a85619885fabf3d7c
 ## [2.0.0] - 2025
 
 ### 🚀 Major Features
@@ -161,4 +180,3 @@
 - Sistema de configurações
 - Favicons funcionais
 - DevTools básico (F12)
-

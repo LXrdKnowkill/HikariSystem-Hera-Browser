@@ -97,6 +97,66 @@ window.addEventListener('DOMContentLoaded', () => {
   let activeTabId: string | null = null;
   const tabsOrder: string[] = [];
 
+  // ========================================
+  // BARRA DE FAVORITOS
+  // ========================================
+  
+  /**
+   * Renderiza a barra de favoritos com os bookmarks salvos
+   */
+  async function renderFavoritesBar() {
+    try {
+      // Busca favoritos da raiz (sem pasta)
+      const bookmarksRaw = await window.heraAPI.getBookmarks();
+      const bookmarks = validateBookmarks(bookmarksRaw);
+      
+      // Limpa a barra
+      favoritesBar.innerHTML = '';
+      
+      if (bookmarks.length === 0) {
+        // Mostra mensagem quando não há favoritos
+        const emptyMessage = document.createElement('span');
+        emptyMessage.style.color = '#888';
+        emptyMessage.style.fontSize = '13px';
+        emptyMessage.textContent = 'Adicione favoritos clicando na estrela ⭐';
+        favoritesBar.appendChild(emptyMessage);
+        return;
+      }
+      
+      // Renderiza cada favorito
+      bookmarks.forEach((bookmark: Bookmark) => {
+        const link = document.createElement('a');
+        link.href = '#';
+        link.className = 'favorite-item';
+        link.title = bookmark.url;
+        link.textContent = bookmark.title || bookmark.url;
+        
+        // Adiciona favicon se existir
+        if (bookmark.favicon) {
+          const favicon = document.createElement('img');
+          favicon.src = bookmark.favicon;
+          favicon.className = 'favorite-favicon';
+          favicon.onerror = () => {
+            favicon.style.display = 'none';
+          };
+          link.prepend(favicon);
+        }
+        
+        // Listener de clique para navegar
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.heraAPI.navigateTo(bookmark.url);
+        });
+        
+        favoritesBar.appendChild(link);
+      });
+      
+    } catch (error) {
+      console.error('Erro ao renderizar barra de favoritos:', error);
+      favoritesBar.innerHTML = '<span style="color: #888;">Erro ao carregar favoritos</span>';
+    }
+  }
+
   // ========================================// FUNÇÕES DE GERENCIAMENTO DE ABAS// ========================================
   const addTabToUI = (id: string, title: string, favicon?: string) => {
     const tabButton = document.createElement('button');
@@ -806,6 +866,10 @@ window.addEventListener('DOMContentLoaded', () => {
         isBookmarked = true;
         bookmarkBtn.classList.add('active');
       }
+      
+      // Atualiza a barra de favoritos
+      renderFavoritesBar();
+      
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error('Erro ao gerenciar favorito:', error.message);
@@ -1060,5 +1124,8 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   // ========================================// INICIALIZAÇÃO// ========================================
+  
+  // Renderiza a barra de favoritos ao iniciar
+  renderFavoritesBar();
 
 }); // Fecha o 'DOMContentLoaded'
