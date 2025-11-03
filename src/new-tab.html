@@ -24,7 +24,6 @@
         <div class="new-tab-greeting">Bem-vindo ao Hera Browser!</div>
     </div>
     <script>
-        // O script continua o mesmo...
         document.addEventListener('DOMContentLoaded', () => {
             const currentTimeElement = document.getElementById('currentTime');
             const newTabSearchInput = document.getElementById('newTabSearchInput');
@@ -40,11 +39,26 @@
             setInterval(updateTime, 1000);
             updateTime(); 
 
-            const performSearch = () => {
+            const performSearch = async () => {
                 const query = newTabSearchInput.value.trim();
                 if (query) {
-                    // Isso aqui vai chamar 'hera://navigate-from-newtab?url=...'
-                    window.location.href = `hera://navigate-from-newtab?url=${encodeURIComponent(query)}`;
+                    // Determina se é URL ou busca
+                    const isUrl = /^(https?:\/\/)|(localhost)|([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}/.test(query);
+                    let finalUrl = query;
+                    
+                    if (isUrl) {
+                        if (!query.startsWith('http://') && !query.startsWith('https://')) {
+                            finalUrl = `https://${query}`;
+                        }
+                    } else {
+                        // Usa Google como mecanismo de busca padrão
+                        finalUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+                    }
+                    
+                    // Usa a API do Electron para navegar
+                    if (window.heraAPI && window.heraAPI.navigateTo) {
+                        await window.heraAPI.navigateTo(finalUrl);
+                    }
                 }
             };
 

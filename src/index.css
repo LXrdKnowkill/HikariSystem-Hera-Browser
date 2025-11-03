@@ -329,11 +329,11 @@ body {
     display: block;
 }
 
-/* 5. Barra de Favoritos (Sem mudanças) */
+/* 5. Barra de Favoritos */
 #favorites-bar {
     display: flex;
     align-items: center;
-    height: 30px;
+    min-height: 30px;
     background-color: #2b2b2b;
     padding: 0 16px;
     border-bottom: 1px solid #1c1c1c;
@@ -342,6 +342,7 @@ body {
     gap: 8px;
     overflow-x: auto;
     overflow-y: hidden;
+    flex-shrink: 0;
 }
 
 #favorites-bar::-webkit-scrollbar {

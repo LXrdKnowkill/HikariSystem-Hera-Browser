@@ -4,37 +4,43 @@
  * Este preload é usado para sites externos (youtube.com, google.com, etc.)
  * 
  * ⚠️ SEGURANÇA: Este preload NÃO expõe acesso ao banco de dados ou APIs sensíveis.
- * Sites externos NÃO podem:
- * - Acessar histórico
- * - Limpar dados
- * - Acessar favoritos
- * - Modificar configurações
- * - Acessar downloads
- * 
- * Sites externos PODEM apenas:
- * - Solicitar menu de contexto (futuro)
- * - Comunicação básica e segura com o navegador
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
+
+// ========================================
+// MASCARAMENTO - DEVE SER A PRIMEIRA COISA
+// ========================================
+
+// Remove Electron ANTES de qualquer coisa
+try {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (typeof (process as any) !== 'undefined' && (process as any).versions) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (process as any).versions.electron;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (process as any).type;
+  }
+} catch (e) {
+  // Ignorar
+}
+
+// Adiciona window.chrome básico
+if (!(window as any).chrome) {
+  (window as any).chrome = {
+    runtime: {}
+  };
+}
 
 /**
  * API limitada e segura para sites externos
  */
 const webAPI = {
-  /**
-   * Solicita menu de contexto (implementação futura)
-   * Isso é seguro porque apenas mostra um menu, não expõe dados
-   */
   requestContextMenu: (x: number, y: number) => {
     ipcRenderer.send('web:context-menu', { x, y });
   },
 
-  /**
-   * Notifica o navegador sobre eventos da página (seguro)
-   */
   notifyPageEvent: (eventType: string) => {
-    // Apenas eventos permitidos
     const allowedEvents = ['page-ready', 'page-error'];
     if (allowedEvents.includes(eventType)) {
       ipcRenderer.send('web:page-event', eventType);
@@ -45,5 +51,4 @@ const webAPI = {
 // Expõe apenas a API limitada
 contextBridge.exposeInMainWorld('webAPI', webAPI);
 
-// Log para debug (remover em produção)
-console.log('[Preload-Web] API limitada carregada - Site externo protegido');
+console.log('[Preload-Web] ✅ Carregado');

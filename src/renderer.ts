@@ -105,6 +105,12 @@ window.addEventListener('DOMContentLoaded', () => {
    * Renderiza a barra de favoritos com os bookmarks salvos
    */
   async function renderFavoritesBar() {
+    // Safety check for favorites bar element
+    if (!favoritesBar) {
+      console.error('Elemento #favorites-bar não encontrado');
+      return;
+    }
+
     try {
       // Busca favoritos da raiz (sem pasta)
       const bookmarksRaw = await window.heraAPI.getBookmarks();
@@ -125,6 +131,11 @@ window.addEventListener('DOMContentLoaded', () => {
       
       // Renderiza cada favorito
       bookmarks.forEach((bookmark: Bookmark) => {
+        // Skip folders (bookmarks without URL)
+        if (!bookmark.url) {
+          return;
+        }
+
         const link = document.createElement('a');
         link.href = '#';
         link.className = 'favorite-item';
@@ -859,22 +870,33 @@ window.addEventListener('DOMContentLoaded', () => {
           await window.heraAPI.removeBookmark(bookmark.id);
           isBookmarked = false;
           bookmarkBtn.classList.remove('active');
+          // Atualiza a barra de favoritos após remoção bem-sucedida
+          await renderFavoritesBar();
         }
       } else {
         // Adicionar favorito
         await window.heraAPI.addBookmark(url, title, favicon);
         isBookmarked = true;
         bookmarkBtn.classList.add('active');
+        // Atualiza a barra de favoritos após adição bem-sucedida
+        await renderFavoritesBar();
       }
-      
-      // Atualiza a barra de favoritos
-      renderFavoritesBar();
       
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error('Erro ao gerenciar favorito:', error.message);
       } else {
         console.error('Erro ao gerenciar favorito:', error);
+      }
+      // Atualiza a barra de favoritos mesmo em caso de erro para garantir sincronização
+      try {
+        await renderFavoritesBar();
+      } catch (renderError: unknown) {
+        if (renderError instanceof Error) {
+          console.error('Erro ao atualizar barra de favoritos:', renderError.message);
+        } else {
+          console.error('Erro ao atualizar barra de favoritos:', renderError);
+        }
       }
     }
   });

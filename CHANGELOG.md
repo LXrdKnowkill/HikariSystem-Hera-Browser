@@ -1,5 +1,24 @@
 # Changelog - Hera Browser
 
+## [2.0.3] - 2025-11-03
+
+### 🐛 Bug Fixes
+
+#### Protocolo hera:// e Sessão Persistente
+- ✅ **FIXED: Página inicial não carregava** - Corrigido erro "Obter um aplicativo para abrir este 'hera' link"
+- ✅ **FIXED: WhatsApp Web não funcionava** - Implementada sessão persistente correta
+- ✅ Navegação interna agora usa API do Electron em vez de window.location
+- ✅ User Agent configurado globalmente para todas as sessões
+- ✅ Partições separadas para páginas internas e externas
+- ✅ Permissões configuradas corretamente (media, notifications, clipboard, etc)
+
+### 🔧 Technical Improvements
+- ✅ Melhor tratamento de erros de carregamento
+- ✅ Handler de abertura de janelas otimizado
+- ✅ Código limpo e organizado
+
+---
+
 ## [2.0.2] - 2025-11-03
 
 ### ✨ New Features

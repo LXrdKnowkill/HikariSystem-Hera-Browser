@@ -35,7 +35,8 @@ declare const PRELOAD_WEB_WEBPACK_ENTRY: string;
 // Constantes
 const TAB_BAR_HEIGHT = 40;
 const NAV_BAR_HEIGHT = 50;
-const UI_HEIGHT = TAB_BAR_HEIGHT + NAV_BAR_HEIGHT;
+const FAVORITES_BAR_HEIGHT = 30;
+const UI_HEIGHT = TAB_BAR_HEIGHT + NAV_BAR_HEIGHT + FAVORITES_BAR_HEIGHT;
 
 /**
  * Determina qual preload usar baseado na URL
@@ -108,13 +109,23 @@ const switchToTab = (id: string) => {
 const createNewTab = (url: string | undefined = undefined) => {
   const finalUrl = url || 'hera://new-tab'; // Se a URL for nula, abre a new-tab
 
+  const id = uuidv4();
+
+  // Determina a partition baseada na URL
+  // URLs internas (hera://) não precisam de persistência (usa sessão padrão)
+  // URLs externas usam partition compartilhada para manter sessões (WhatsApp, etc)
+  const partition = finalUrl.startsWith('hera://') ? undefined : 'persist:web-content';
+
   const view = new BrowserView({
     webPreferences: {
       preload: getPreloadForUrl(finalUrl),
+      // Persiste cookies, cache e localStorage apenas para sites externos
+      partition: partition,
+      contextIsolation: true,
+      nodeIntegration: false
     }
   });
 
-  const id = uuidv4();
   tabs.set(id, view);
 
   // Determinar título e favicon inicial
@@ -137,6 +148,42 @@ const createNewTab = (url: string | undefined = undefined) => {
   view.webContents.loadURL(finalUrl);
 
   mainWindow.webContents.send('tab-created', { id, title: initialTitle, url: finalUrl, favicon: initialFavicon });
+
+  // Handler para abrir links em nova janela/aba
+  view.webContents.setWindowOpenHandler(({ url }) => {
+    // Se for um link interno (hera://), abre em nova aba
+    if (url.startsWith('hera://')) {
+      createNewTab(url);
+      return { action: 'deny' };
+    }
+    // Se for um link externo, abre em nova aba do navegador
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      createNewTab(url);
+      return { action: 'deny' };
+    }
+    // Para outros protocolos (mailto:, tel:, etc), abre no app padrão do sistema
+    // MAS NÃO tenta abrir hera:// externamente
+    if (!url.startsWith('hera://')) {
+      shell.openExternal(url).catch(err => {
+        console.error('Erro ao abrir URL externa:', err);
+      });
+    }
+    return { action: 'deny' };
+  });
+
+
+
+  // Captura erros de carregamento para páginas internas
+  view.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    // Se for um erro com protocolo hera://, tenta recarregar uma vez
+    if (validatedURL.startsWith('hera://') && errorCode !== 0) {
+      setTimeout(() => {
+        view.webContents.loadURL(validatedURL).catch(() => {
+          console.error(`Falha ao carregar página interna: ${validatedURL}`);
+        });
+      }, 100);
+    }
+  });
 
   // DevTools - F12 para abrir/fechar (nas abas também - painel integrado)
   view.webContents.on('before-input-event', (event, input) => {
@@ -501,6 +548,38 @@ app.whenReady().then(async () => {
   } catch (error: unknown) {
     console.error('Erro ao inicializar banco de dados:', error);
   }
+
+  // Configurar User Agent global para todas as sessões
+  const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+  
+  session.defaultSession.setUserAgent(userAgent);
+  
+  // Configurar sessão persistente para sites externos
+  const webSession = session.fromPartition('persist:web-content');
+  webSession.setUserAgent(userAgent);
+  
+  // Configurar permissões para ambas as sessões
+  const allowedPermissions = [
+    'media',
+    'mediaKeySystem',
+    'geolocation',
+    'notifications',
+    'midi',
+    'midiSysex',
+    'pointerLock',
+    'fullscreen',
+    'openExternal',
+    'clipboard-read',
+    'clipboard-sanitized-write'
+  ];
+  
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    callback(allowedPermissions.includes(permission));
+  });
+  
+  webSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    callback(allowedPermissions.includes(permission));
+  });
 
   // --- Handler do Protocolo (MUDANÇA v2.2) ---
   const getMimeType = (filePath: string) => {

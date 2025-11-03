@@ -2,7 +2,7 @@
 
 Um navegador moderno e elegante construído com Electron, inspirado nas melhores práticas do Chromium.
 
-![Version](https://img.shields.io/badge/version-2.0.2-blue.svg)
+![Version](https://img.shields.io/badge/version-2.0.3-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Electron](https://img.shields.io/badge/Electron-38.4.0-47848F.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue.svg)
@@ -185,6 +185,12 @@ Veja [SECURITY_PRELOAD.md](SECURITY_PRELOAD.md) para mais detalhes.
 
 ## 📝 Changelog
 
+### v2.0.3 (2025-11-03)
+- 🐛 **CORREÇÃO CRÍTICA** - Protocolo hera:// agora funciona corretamente
+- 🌐 **WhatsApp Web** - Sessão persistente implementada
+- ⚡ Navegação interna otimizada
+- 🔧 User Agent configurado globalmente
+
 ### v2.0.2 (2025-11-03)
 - ✨ Barra de favoritos funcional com visualização
 - 🎨 Design moderno com favicons e animações
@@ -233,7 +239,6 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 **Knowkill**
 
 - GitHub: [@LXrdKnowkill](https://github.com/LXrdKnowkill)
-- Email: Todosjogosposssiveis@gmail.com
 
 ## 🙏 Agradecimentos
 
