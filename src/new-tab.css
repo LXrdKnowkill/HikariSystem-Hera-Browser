@@ -1,0 +1,98 @@
+/* new-tab.css */
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    background-color: #363636; /* <-- É ESSA LINHA AQUI, BABY */
+    color: #e0e0e0; /* <-- E essa é a cor do texto (branco) */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden; 
+}
+.new-tab-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 600px; /* Limita a largura para centralizar */
+}
+
+.new-tab-logo {
+    width: 180px;  /* <-- Aumenta aqui */
+    height: 180px; /* <-- Aumenta aqui */
+    opacity: 0.8;
+}
+
+.new-tab-time {
+    font-size: 4em; /* Hora grande */
+    font-weight: 200;
+    letter-spacing: -2px;
+}
+
+.new-tab-search-wrapper {
+    display: flex;
+    width: 100%;
+    max-width: 500px;
+    background-color: #000000;
+    border-radius: 25px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+#newTabSearchInput {
+    flex-grow: 1;
+    border: none;
+    padding: 12px 20px;
+    font-size: 1.1em;
+    background: transparent;
+    color: #e0e0e0;
+    outline: none;
+}
+
+#newTabSearchInput::placeholder {
+    color: #888;
+}
+
+#newTabSearchBtn {
+    /* --- Isso aqui centraliza o SVG --- */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    /* --- Isso aqui faz o botão redondo --- */
+    width: 45px;  /* Largura fixa */
+    height: 45px; /* Altura fixa (igual à largura) */
+    border-radius: 50%; /* O "círculo mágico" */
+    
+    /* --- O seu estilo que eu vi no print --- */
+    /* Esse é o gradiente roxo/azul que eu vi */
+    background: linear-gradient(45deg, #4f46e5, #c026d3); 
+    
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    /* Remove qualquer padding que sobrou */
+    padding: 0; 
+}
+
+#newTabSearchBtn:hover {
+    opacity: 0.8; /* Efeito de hover simples */
+}
+
+/* --- E AGORA A GENTE ESTILIZA O ÍCONE --- */
+#newTabSearchBtn svg {
+    stroke: #ffffff; /* Cor do ícone (branco) */
+    width: 18px;     /* Tamanho do ícone */
+    height: 18px;    /* Tamanho do ícone */
+}
+
+.new-tab-greeting {
+    font-size: 1.2em;
+    color: #ccc;
+    margin-top: 10px;
+}
