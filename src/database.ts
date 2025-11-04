@@ -338,7 +338,7 @@ export const saveOpenTabs = (tabs: TabState[]): Promise<void> => {
 
       tabs.forEach((tab) => {
         db!.run(
-          'INSERT INTO open_tabs (id, url, title, favicon, position, active) VALUES (?, ?, ?, ?, ?, ?)',
+          'INSERT OR REPLACE INTO open_tabs (id, url, title, favicon, position, active) VALUES (?, ?, ?, ?, ?, ?)',
           [tab.id, tab.url, tab.title, tab.favicon || null, tab.position, tab.active ? 1 : 0],
           (err: Error | null) => {
             if (err && !hasError) {

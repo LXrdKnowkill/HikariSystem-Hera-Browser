@@ -34,7 +34,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // ========================================// ELEMENTOS DA UI// ========================================
   const tabBar = document.getElementById('tab-bar')!;
   const navBar = document.getElementById('nav-bar')!;
-  const favoritesBar = document.getElementById('favorites-bar')!;
+  const favoritesBar = document.getElementById('favorites-bar') as HTMLDivElement;
   const addTabBtn = document.getElementById('add-tab-btn')!;
   const backBtn = document.getElementById('back-btn') as HTMLButtonElement;
   const forwardBtn = document.getElementById('forward-btn') as HTMLButtonElement;
@@ -105,66 +105,61 @@ window.addEventListener('DOMContentLoaded', () => {
    * Renderiza a barra de favoritos com os bookmarks salvos
    */
   async function renderFavoritesBar() {
-    // Safety check for favorites bar element
     if (!favoritesBar) {
-      console.error('Elemento #favorites-bar não encontrado');
+      console.error('[Favorites] Elemento não encontrado');
       return;
     }
 
     try {
-      // Busca favoritos da raiz (sem pasta)
       const bookmarksRaw = await window.heraAPI.getBookmarks();
       const bookmarks = validateBookmarks(bookmarksRaw);
+      const validBookmarks = bookmarks.filter(b => b.url);
       
-      // Limpa a barra
+      // Limpa conteúdo
       favoritesBar.innerHTML = '';
       
-      if (bookmarks.length === 0) {
-        // Mostra mensagem quando não há favoritos
-        const emptyMessage = document.createElement('span');
-        emptyMessage.style.color = '#888';
-        emptyMessage.style.fontSize = '13px';
-        emptyMessage.textContent = 'Adicione favoritos clicando na estrela ⭐';
-        favoritesBar.appendChild(emptyMessage);
+      console.log(`[Favorites] ${validBookmarks.length} favoritos encontrados`);
+      
+      if (validBookmarks.length === 0) {
+        favoritesBar.style.display = 'none';
         return;
       }
       
-      // Renderiza cada favorito
-      bookmarks.forEach((bookmark: Bookmark) => {
-        // Skip folders (bookmarks without URL)
-        if (!bookmark.url) {
-          return;
-        }
-
+      // Cria elementos dos favoritos
+      const fragment = document.createDocumentFragment();
+      
+      validBookmarks.forEach((bookmark: Bookmark) => {
         const link = document.createElement('a');
         link.href = '#';
         link.className = 'favorite-item';
         link.title = bookmark.url;
-        link.textContent = bookmark.title || bookmark.url;
         
-        // Adiciona favicon se existir
         if (bookmark.favicon) {
           const favicon = document.createElement('img');
           favicon.src = bookmark.favicon;
           favicon.className = 'favorite-favicon';
-          favicon.onerror = () => {
-            favicon.style.display = 'none';
-          };
-          link.prepend(favicon);
+          favicon.onerror = () => favicon.style.display = 'none';
+          link.appendChild(favicon);
         }
         
-        // Listener de clique para navegar
+        const textSpan = document.createElement('span');
+        textSpan.textContent = bookmark.title || bookmark.url;
+        link.appendChild(textSpan);
+        
         link.addEventListener('click', (e) => {
           e.preventDefault();
           window.heraAPI.navigateTo(bookmark.url);
         });
         
-        favoritesBar.appendChild(link);
+        fragment.appendChild(link);
       });
       
+      favoritesBar.appendChild(fragment);
+      favoritesBar.style.display = 'flex';
+      
     } catch (error) {
-      console.error('Erro ao renderizar barra de favoritos:', error);
-      favoritesBar.innerHTML = '<span style="color: #888;">Erro ao carregar favoritos</span>';
+      console.error('[Favorites] Erro:', error);
+      favoritesBar.style.display = 'none';
     }
   }
 
@@ -629,7 +624,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Escape') {
       historyPage.classList.add('hidden');
       downloadsPanel.classList.add('hidden');
-      omniboxSuggestionsEl.classList.add('hidden');
       urlInput.blur();
     }
   });
@@ -643,138 +637,48 @@ window.addEventListener('DOMContentLoaded', () => {
   maxBtn.addEventListener('click', () => window.heraAPI.windowMaximize());
   closeBtn.addEventListener('click', () => window.heraAPI.windowClose());
 
-  // Omnibox com sugestões (v2.0.0)
-  const omniboxSuggestionsEl = document.getElementById('omnibox-suggestions')!;
-  
-  const renderSuggestions = (suggestions: Array<{ type: 'history' | 'bookmark' | 'search'; title: string; url: string; favicon?: string }>) => {
-    if (suggestions.length === 0) {
-      omniboxSuggestionsEl.classList.add('hidden');
-      return;
-    }
+  // Omnibox agora é um BrowserView separado - não precisa mais de renderSuggestions aqui
 
-    omniboxSuggestionsEl.innerHTML = '';
-    omniboxSuggestionsEl.classList.remove('hidden');
-
-    suggestions.forEach((suggestion: { type: 'history' | 'bookmark' | 'search'; title: string; url: string; favicon?: string }, index: number) => {
-      const item = document.createElement('div');
-      item.className = `omnibox-suggestion-item ${index === selectedSuggestionIndex ? 'selected' : ''}`;
-      item.dataset.index = index.toString();
-      
-      const iconType = suggestion.type === 'bookmark' ? 'star' : suggestion.type === 'history' ? 'clock' : 'search';
-      const iconSvg = suggestion.favicon 
-        ? `<img src="${suggestion.favicon}" class="omnibox-suggestion-favicon" alt="" onerror="this.style.display='none'">`
-        : `<svg class="omnibox-suggestion-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            ${iconType === 'star' ? '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>' : ''}
-            ${iconType === 'clock' ? '<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>' : ''}
-            ${iconType === 'search' ? '<circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>' : ''}
-          </svg>`;
-      
-      item.innerHTML = `
-        ${iconSvg}
-        <div class="omnibox-suggestion-content">
-          <div class="omnibox-suggestion-title">${suggestion.title}</div>
-          <div class="omnibox-suggestion-url">${suggestion.url}</div>
-        </div>
-        <span class="omnibox-suggestion-type">${suggestion.type === 'bookmark' ? 'Favorito' : suggestion.type === 'history' ? 'Histórico' : 'Buscar'}</span>
-      `;
-      
-      item.addEventListener('click', () => {
-        window.heraAPI.navigateTo(suggestion.url);
-        omniboxSuggestionsEl.classList.add('hidden');
-        urlInput.blur();
-      });
-      
-      omniboxSuggestionsEl.appendChild(item);
-    });
-  };
-
+  // Omnibox temporariamente desabilitado
   let suggestionTimeout: NodeJS.Timeout;
   urlInput.addEventListener('input', async (e) => {
     const query = (e.target as HTMLInputElement).value.trim();
-    
     clearTimeout(suggestionTimeout);
-    
-    if (query.length < 2) {
-      omniboxSuggestionsEl.classList.add('hidden');
-      selectedSuggestionIndex = -1;
-      return;
-    }
-
-    // Debounce para não buscar a cada tecla
-    suggestionTimeout = setTimeout(async () => {
-      const suggestions = await getOmniboxSuggestions(query);
-      renderSuggestions(suggestions);
-      selectedSuggestionIndex = -1;
-    }, 150);
+    // TODO: Re-implementar omnibox
   });
 
   urlInput.addEventListener('keydown', async (e) => {
-    if (!omniboxSuggestionsEl.classList.contains('hidden')) {
-      const items = omniboxSuggestionsEl.querySelectorAll('.omnibox-suggestion-item');
-      
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, items.length - 1);
-        items.forEach((item: Element, idx: number) => {
-          item.classList.toggle('selected', idx === selectedSuggestionIndex);
-        });
-        if (selectedSuggestionIndex >= 0) {
-          items[selectedSuggestionIndex].scrollIntoView({ block: 'nearest' });
-        }
-        return;
-      }
-      
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
-        items.forEach((item: Element, idx: number) => {
-          item.classList.toggle('selected', idx === selectedSuggestionIndex);
-        });
-        return;
-      }
-      
-      if (e.key === 'Enter' && selectedSuggestionIndex >= 0) {
-        e.preventDefault();
-        const selectedItem = items[selectedSuggestionIndex] as HTMLElement;
-        const url = selectedItem.querySelector('.omnibox-suggestion-url')?.textContent || '';
-        if (url) {
-          window.heraAPI.navigateTo(url);
-          omniboxSuggestionsEl.classList.add('hidden');
-          urlInput.blur();
-        }
-        return;
-      }
-      
-      if (e.key === 'Escape') {
-        omniboxSuggestionsEl.classList.add('hidden');
-        selectedSuggestionIndex = -1;
-        return;
-      }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleUrlSubmit();
+      urlInput.blur();
+      return;
     }
     
-    // Enter sem sugestões selecionadas
-    if (e.key === 'Enter' && omniboxSuggestionsEl.classList.contains('hidden')) {
-      handleUrlSubmit();
+    if (e.key === 'Escape') {
+      selectedSuggestionIndex = -1;
+      urlInput.blur();
+      return;
     }
   });
 
-  // Fecha sugestões ao clicar fora
-  document.addEventListener('click', (e) => {
-    const urlBarWrapper = document.getElementById('url-bar-wrapper');
-    if (urlBarWrapper && !urlBarWrapper.contains(e.target as Node)) {
-      omniboxSuggestionsEl.classList.add('hidden');
-    }
-  });
+  // Omnibox desabilitado temporariamente
 
   urlInput.addEventListener('focus', () => {
     urlInput.select();
-    // Mostra sugestões se houver texto
-    if (urlInput.value.trim().length >= 2) {
-      getOmniboxSuggestions(urlInput.value.trim()).then(suggestions => {
-        renderSuggestions(suggestions);
-      });
-    }
   });
+
+  // Click no wrapper da URL bar para focar o input
+  const urlBarWrapper = document.getElementById('url-bar-wrapper');
+  if (urlBarWrapper) {
+    urlBarWrapper.addEventListener('click', (e) => {
+      // Só foca se não clicou em um elemento interativo
+      if (e.target === urlBarWrapper || (e.target as HTMLElement).classList.contains('secure-icon')) {
+        urlInput.focus();
+        urlInput.select();
+      }
+    });
+  }
 
   // Botão de Downloads - Abre página dedicada
   downloadsBtn.addEventListener('click', () => {
@@ -862,7 +766,7 @@ window.addEventListener('DOMContentLoaded', () => {
     
     try {
       if (isBookmarked) {
-        // Remover favorito
+        console.log('[Bookmark] Removendo favorito...');
         const bookmarksRaw = await window.heraAPI.getBookmarks();
         const bookmarks = validateBookmarks(bookmarksRaw);
         const bookmark = bookmarks.find((b: Bookmark) => b.url === url);
@@ -870,15 +774,15 @@ window.addEventListener('DOMContentLoaded', () => {
           await window.heraAPI.removeBookmark(bookmark.id);
           isBookmarked = false;
           bookmarkBtn.classList.remove('active');
-          // Atualiza a barra de favoritos após remoção bem-sucedida
+          console.log('[Bookmark] Favorito removido, atualizando barra...');
           await renderFavoritesBar();
         }
       } else {
-        // Adicionar favorito
+        console.log('[Bookmark] Adicionando favorito...');
         await window.heraAPI.addBookmark(url, title, favicon);
         isBookmarked = true;
         bookmarkBtn.classList.add('active');
-        // Atualiza a barra de favoritos após adição bem-sucedida
+        console.log('[Bookmark] Favorito adicionado, atualizando barra...');
         await renderFavoritesBar();
       }
       
@@ -931,6 +835,12 @@ window.addEventListener('DOMContentLoaded', () => {
   window.heraAPI.onTabUpdated((id, tabInfo) => updateTabInfo(id, tabInfo));
 
   window.heraAPI.onTabLoading((id, isLoading) => updateTabInfo(id, { loading: isLoading }));
+
+  // Listen for omnibox navigation
+  window.heraAPI.on('omnibox:navigate', (url: string) => {
+    window.heraAPI.navigateTo(url);
+    urlInput.blur();
+  });
 
   const downloadsEmpty = document.getElementById('downloads-empty')!;
   
@@ -1147,7 +1057,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // ========================================// INICIALIZAÇÃO// ========================================
   
-  // Renderiza a barra de favoritos ao iniciar
-  renderFavoritesBar();
+  // Inicializa a barra de favoritos
+  console.log('[Init] Inicializando barra de favoritos...');
+  favoritesBar.style.display = 'none'; // Garante que começa escondida
+  renderFavoritesBar().then(() => {
+    console.log('[Init] Barra de favoritos inicializada');
+  }).catch(err => {
+    console.error('[Init] Erro ao inicializar barra de favoritos:', err);
+  });
 
 }); // Fecha o 'DOMContentLoaded'

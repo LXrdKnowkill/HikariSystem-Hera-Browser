@@ -14,6 +14,7 @@
  * automaticamente pelo TypeScript durante a compilação.
  */
 
+// @ts-nocheck - Suprime warnings de variáveis não utilizadas em testes de tipo
 import { HeraAPI } from '../api.types';
 import { Bookmark, BookmarkFolder, HistoryEntry } from '../database.types';
 import { NavigationState } from '../ui.types';

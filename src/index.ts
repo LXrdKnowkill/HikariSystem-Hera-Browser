@@ -35,8 +35,13 @@ declare const PRELOAD_WEB_WEBPACK_ENTRY: string;
 // Constantes
 const TAB_BAR_HEIGHT = 40;
 const NAV_BAR_HEIGHT = 50;
-const FAVORITES_BAR_HEIGHT = 30;
-const UI_HEIGHT = TAB_BAR_HEIGHT + NAV_BAR_HEIGHT + FAVORITES_BAR_HEIGHT;
+const FAVORITES_BAR_HEIGHT = 36;
+let isFavoritesBarHidden = false;
+
+// Função para calcular altura da UI dinamicamente
+function getUIHeight(): number {
+  return TAB_BAR_HEIGHT + NAV_BAR_HEIGHT + (isFavoritesBarHidden ? 0 : FAVORITES_BAR_HEIGHT);
+}
 
 /**
  * Determina qual preload usar baseado na URL
@@ -65,6 +70,8 @@ let activeTabId: string = null;
 let menuView: BrowserView;
 let isMenuVisible = false;
 let dynamicMenuHeight = 250; // Default or approximated height
+let omniboxView: BrowserView;
+const isOmniboxVisible = false;
 
 // --- Histórico ---
 // Agora usando SQLite através do módulo database.ts
@@ -88,7 +95,8 @@ const resizeActiveTab = () => {
   if (activeTabId && tabs.has(activeTabId)) {
     const activeView = tabs.get(activeTabId);
     const [width, height] = mainWindow.getContentSize();
-    activeView.setBounds({ x: 0, y: UI_HEIGHT, width: width, height: height - UI_HEIGHT });
+    const uiHeight = getUIHeight();
+    activeView.setBounds({ x: 0, y: uiHeight, width: width, height: height - uiHeight });
   }
 };
 
@@ -533,6 +541,18 @@ const createWindow = (): void => {
     dynamicMenuHeight = height;
   });
 
+  // Create omnibox view (similar to menu)
+  omniboxView = new BrowserView({
+    webPreferences: {
+      preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+      contextIsolation: true,
+      nodeIntegration: false,
+      transparent: true,
+    }
+  });
+  omniboxView.webContents.loadURL('hera://omnibox');
+  omniboxView.setBackgroundColor('#00000000'); // Transparent
+
   mainWindow.on('resize', resizeActiveTab);
 };
 
@@ -551,13 +571,13 @@ app.whenReady().then(async () => {
 
   // Configurar User Agent global para todas as sessões
   const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
-  
+
   session.defaultSession.setUserAgent(userAgent);
-  
+
   // Configurar sessão persistente para sites externos
   const webSession = session.fromPartition('persist:web-content');
   webSession.setUserAgent(userAgent);
-  
+
   // Configurar permissões para ambas as sessões
   const allowedPermissions = [
     'media',
@@ -572,11 +592,11 @@ app.whenReady().then(async () => {
     'clipboard-read',
     'clipboard-sanitized-write'
   ];
-  
+
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
     callback(allowedPermissions.includes(permission));
   });
-  
+
   webSession.setPermissionRequestHandler((webContents, permission, callback) => {
     callback(allowedPermissions.includes(permission));
   });
@@ -668,6 +688,12 @@ app.whenReady().then(async () => {
         } else {
           filePath = path.join(appPath, pathname);
         }
+      } else if (host === 'omnibox') {
+        if (pathname === '/' || pathname === '') {
+          filePath = path.join(appPath, 'omnibox.html');
+        } else {
+          filePath = path.join(appPath, pathname);
+        }
       }
       // --- FIM DA MUDANÇA ---
       else {
@@ -739,13 +765,30 @@ app.whenReady().then(async () => {
     }
   });
   ipcMain.handle('nav:reload', () => tabs.get(activeTabId)?.webContents.reload());
-  ipcMain.handle('nav:to', (_e, url: string) => {
-    // Validate input parameter
+  ipcMain.handle('nav:to', async (_e, url: string) => {
     if (typeof url !== 'string' || !url.trim()) {
       console.error('URL inválida fornecida para nav:to');
       return;
     }
-    return tabs.get(activeTabId)?.webContents.loadURL(url);
+
+    const tab = tabs.get(activeTabId);
+    if (!tab) {
+      console.error('Aba ativa não encontrada');
+      return;
+    }
+
+    try {
+      await tab.webContents.loadURL(url);
+    } catch (error: unknown) {
+      // ERR_ABORTED (-3) é comum quando o usuário navega rapidamente
+      // Não é um erro crítico, apenas log para debug
+      if (error instanceof Error && 'code' in error && error.code === 'ERR_ABORTED') {
+        console.log('Navegação cancelada (usuário navegou para outra página)');
+      } else {
+        console.error('Erro ao navegar:', error);
+        throw error;
+      }
+    }
   });
 
   ipcMain.handle('nav:get-state', () => {
@@ -757,6 +800,27 @@ app.whenReady().then(async () => {
       canGoBack: view.webContents.navigationHistory.canGoBack(),
       canGoForward: view.webContents.navigationHistory.canGoForward()
     };
+  });
+
+  // Handlers temporariamente desabilitados - voltando para solução simples
+  ipcMain.on('omnibox:show', () => {
+    // Não faz nada por enquanto
+  });
+
+  ipcMain.on('omnibox:hide', () => {
+    // Não faz nada por enquanto
+  });
+
+  ipcMain.on('omnibox:select', () => {
+    // Não faz nada por enquanto
+  });
+
+  ipcMain.on('omnibox:update-selection', () => {
+    // Não faz nada por enquanto
+  });
+
+  ipcMain.on('omnibox:select-current', () => {
+    // Não faz nada por enquanto
   });
 
   ipcMain.on('menu:toggle', () => {
@@ -999,6 +1063,12 @@ app.whenReady().then(async () => {
     shell.openPath(downloadsPath);
   });
 
+  // Favorites bar visibility handler
+  ipcMain.on('favorites-bar-hidden', (_e, hidden: boolean) => {
+    isFavoritesBarHidden = hidden;
+    resizeActiveTab();
+  });
+
   createWindow();
 
   // Tenta restaurar abas salvas
@@ -1036,36 +1106,65 @@ app.whenReady().then(async () => {
     mainWindow.on('resize', resizeActiveTab);
   }
 
-  // Download event listeners (deve ser registrado após createWindow)
-  const defaultSession = session.defaultSession;
-  if (defaultSession) {
-    defaultSession.on('will-download', (event, item, webContents) => {
-      const id = uuidv4();
-      const filename = item.getFilename();
-      const totalBytes = item.getTotalBytes();
-      const savePath = item.getSavePath();
+  // Função auxiliar para lidar com downloads (usada em ambas as sessões)
+  const handleDownload = (event: Electron.Event, item: Electron.DownloadItem, webContents: Electron.WebContents) => {
+    const id = uuidv4();
+    const filename = item.getFilename();
+    const totalBytes = item.getTotalBytes();
+    const savePath = item.getSavePath();
 
+    // Envia evento para mainWindow (UI principal)
+    if (mainWindow && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+      mainWindow.webContents.send('download-started', { id, filename, totalBytes, savePath });
+    }
+
+    // Envia evento para todas as abas (BrowserViews) - especialmente para hera://downloads
+    tabs.forEach((view) => {
+      if (view.webContents && !view.webContents.isDestroyed()) {
+        view.webContents.send('download-started', { id, filename, totalBytes, savePath });
+      }
+    });
+
+    item.on('updated', (event, state) => {
+      if (state === 'progressing') {
+        const receivedBytes = item.getReceivedBytes();
+        
+        // Envia para mainWindow
+        if (mainWindow && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+          mainWindow.webContents.send('download-progress', { id, receivedBytes, totalBytes, savePath });
+        }
+
+        // Envia para todas as abas
+        tabs.forEach((view) => {
+          if (view.webContents && !view.webContents.isDestroyed()) {
+            view.webContents.send('download-progress', { id, receivedBytes, totalBytes, savePath });
+          }
+        });
+      }
+    });
+
+    item.on('done', (event, state) => {
+      const path = item.getSavePath();
+      
+      // Envia para mainWindow
       if (mainWindow && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
-        mainWindow.webContents.send('download-started', { id, filename, totalBytes, savePath });
+        mainWindow.webContents.send('download-complete', { id, state, savePath: path });
       }
 
-      item.on('updated', (event, state) => {
-        if (state === 'progressing') {
-          const receivedBytes = item.getReceivedBytes();
-          if (mainWindow && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
-            mainWindow.webContents.send('download-progress', { id, receivedBytes, totalBytes, savePath });
-          }
-        }
-      });
-
-      item.on('done', (event, state) => {
-        const path = item.getSavePath();
-        if (mainWindow && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
-          mainWindow.webContents.send('download-complete', { id, state, savePath: path });
+      // Envia para todas as abas
+      tabs.forEach((view) => {
+        if (view.webContents && !view.webContents.isDestroyed()) {
+          view.webContents.send('download-complete', { id, state, savePath: path });
         }
       });
     });
-  }
+  };
+
+  // Download event listeners - Registra em AMBAS as sessões
+  // defaultSession: para downloads de páginas internas (hera://)
+  // webSession: para downloads de sites externos (https://)
+  session.defaultSession.on('will-download', handleDownload);
+  webSession.on('will-download', handleDownload);
 }).catch((error: unknown) => {
   console.error('Erro ao inicializar aplicação:', error);
 });

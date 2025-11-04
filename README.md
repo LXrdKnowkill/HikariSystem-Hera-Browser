@@ -2,7 +2,7 @@
 
 Um navegador moderno e elegante construído com Electron, inspirado nas melhores práticas do Chromium.
 
-![Version](https://img.shields.io/badge/version-2.0.3-blue.svg)
+![Version](https://img.shields.io/badge/version-2.0.4-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Electron](https://img.shields.io/badge/Electron-38.4.0-47848F.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue.svg)
@@ -184,6 +184,14 @@ O Hera Browser implementa várias camadas de segurança:
 Veja [SECURITY_PRELOAD.md](SECURITY_PRELOAD.md) para mais detalhes.
 
 ## 📝 Changelog
+
+### v2.0.4 (2025-11-03)
+- 🎨 **POLISH UPDATE** - UI/UX completamente refinada
+- ✨ Sistema de variáveis CSS (30+ variáveis)
+- ✨ Animações aprimoradas e transições suaves
+- ✨ Efeitos de hover elegantes em todos os elementos
+- 🧹 Código CSS limpo e organizado (-100 linhas)
+- ⚡ Performance otimizada (GPU-accelerated)
 
 ### v2.0.3 (2025-11-03)
 - 🐛 **CORREÇÃO CRÍTICA** - Protocolo hera:// agora funciona corretamente

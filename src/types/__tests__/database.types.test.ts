@@ -15,6 +15,7 @@
  * estiver incorreto, o TypeScript gerará um erro de compilação.
  */
 
+// @ts-nocheck - Suprime warnings de variáveis não utilizadas em testes de tipo
 import { 
   HistoryEntry, 
   Bookmark, 

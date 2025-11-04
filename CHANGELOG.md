@@ -1,5 +1,50 @@
 # Changelog - Hera Browser
 
+## [2.0.4] - 2025-11-04
+
+### 🎨 UI/UX Polish
+
+#### CSS Refactor & Improvements
+- ✨ **Sistema de variáveis CSS** - 30+ variáveis para cores, espaçamentos, bordas e transições
+- ✨ **Animações aprimoradas** - Transições mais suaves e elegantes em todos os elementos
+- ✨ **Efeitos de hover melhorados** - Gradientes, elevações e feedback visual
+- ✨ **Scrollbars customizadas** - Design consistente em todos os painéis
+- ✨ **Código limpo** - Removidas duplicações e código obsoleto
+
+#### Melhorias Específicas
+- ✨ Abas com gradiente sutil e indicador visual de aba ativa
+- ✨ Botão "+" com rotação ao hover
+- ✨ Omnibox com animação slide down e badges elegantes
+- ✨ Favoritos com elevação e efeito de gradiente
+- ✨ Histórico com borda lateral colorida ao hover
+- ✨ Downloads com ícones gradientes e barra de progresso animada
+- ✨ Notificações toast com animações dramáticas
+- ✨ Badge de downloads com animação "pop"
+
+#### New Tab Wallpaper
+- ✨ **Suporte a wallpaper customizado** - HeraWallpaper.png como fundo da new-tab
+- ✨ **Efeito glassmorphism** - Barra de busca com backdrop-filter blur
+- ✨ **Logo otimizada** - Tamanho ajustado para melhor composição visual
+
+### 🐛 Bug Fixes
+- 🐛 **FIXED: Downloads não apareciam na página hera://downloads** - Eventos agora são enviados para BrowserViews
+- 🐛 **FIXED: Downloads de sites externos não eram capturados** - Listener adicionado para sessão persist:web-content
+- 🐛 **FIXED: Badge de downloads não aparecia** - Sistema de notificações corrigido
+
+### 🧹 Code Quality
+- ✅ Organização melhorada do CSS (seções bem definidas)
+- ✅ Consistência em todos os estilos
+- ✅ Performance otimizada (GPU-accelerated animations)
+- ✅ Acessibilidade melhorada (contraste e feedback visual)
+- ✅ Warnings de TypeScript suprimidos em arquivos de teste
+
+### 📊 Statistics
+- 📉 CSS reduzido de ~1200 para ~1100 linhas
+- ➕ 15+ animações keyframes otimizadas
+- ➕ 30+ variáveis CSS criadas
+
+---
+
 ## [2.0.3] - 2025-11-03
 
 ### 🐛 Bug Fixes

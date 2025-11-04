@@ -288,6 +288,17 @@ export interface HeraAPI {
   toggleMenu: () => void;
   
   /**
+   * Esconde temporariamente o conteúdo da aba (BrowserView)
+   * Útil para mostrar overlays como omnibox
+   */
+  hideContent: () => void;
+  
+  /**
+   * Mostra novamente o conteúdo da aba (BrowserView)
+   */
+  showContent: () => void;
+  
+  /**
    * Executa uma ação do menu
    * 
    * @param action - Nome da ação a ser executada
@@ -359,6 +370,14 @@ export interface HeraAPI {
    * @param callback - Função a ser chamada quando o evento é disparado
    */
   on: (channel: string, callback: GenericCallback) => void;
+  
+  /**
+   * Envia uma mensagem para o processo principal
+   * 
+   * @param channel - Nome do canal IPC
+   * @param args - Argumentos a serem enviados
+   */
+  send: (channel: string, ...args: unknown[]) => void;
   
   /**
    * Registra callback para evento de download iniciado
