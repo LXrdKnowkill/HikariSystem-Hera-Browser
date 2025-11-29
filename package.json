@@ -12,6 +12,7 @@
     "lint": "eslint --ext .ts,.tsx .",
     "rebuild": "electron-rebuild -f -w better-sqlite3",
     "postinstall": "electron-rebuild -f -w better-sqlite3",
+    "test": "jest",
     "type-check": "tsc --noEmit --skipLibCheck",
     "type-check:watch": "tsc --noEmit --skipLibCheck --watch"
   },
@@ -33,6 +34,7 @@
     "@electron/fuses": "^1.8.0",
     "@electron/rebuild": "^4.0.1",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/jest": "^30.0.0",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
@@ -44,10 +46,12 @@
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-import": "^2.32.0",
     "fork-ts-checker-webpack-plugin": "^7.3.0",
+    "jest": "^30.2.0",
     "node-loader": "^2.1.0",
     "png-to-ico": "^3.0.1",
     "style-loader": "^3.3.4",
     "to-ico-cli": "^1.0.0",
+    "ts-jest": "^29.4.5",
     "ts-loader": "^9.5.4",
     "typescript": "~5.3.3"
   },
